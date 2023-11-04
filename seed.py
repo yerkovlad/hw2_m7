@@ -1,16 +1,20 @@
+import random
 from faker import Faker
+from db.models import Teacher
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from models import Student, Group
 
 fake = Faker()
-engine = create_engine('sqlite:///database.db')  # Підставте свій URL бази даних
+engine = create_engine('postgresql://username:password@localhost/database')
 Session = sessionmaker(bind=engine)
 session = Session()
 
-# Додавання студентів
-for _ in range(30):
-    student = Student(fullname=fake.name(), group_id=fake.random_int(min=1, max=3))
-    session.add(student)
+def seed_teachers(num_teachers):
+    for _ in range(num_teachers):
+        teacher = Teacher(name=fake.name())
+        session.add(teacher)
+    session.commit()
 
-session.commit()
+if __name__ == "__main__":
+    num_teachers = 5
+    seed_teachers(num_teachers)
