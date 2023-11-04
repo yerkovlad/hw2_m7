@@ -1,13 +1,23 @@
-from sqlalchemy import func
+from db.models import Student, Grade
+from sqlalchemy import func, desc
 from sqlalchemy.orm import sessionmaker
-from models import Student, Grade
-from sqlalchemy import desc
+from sqlalchemy import create_engine
 
-engine = create_engine('sqlite:///database.db')
+engine = create_engine('postgresql://username:password@localhost/database')
 Session = sessionmaker(bind=engine)
 session = Session()
 
-def select_1():
-    query = session.query(Student.fullname, func.round(func.avg(Grade.score), 2).label('avg_score'))
-    query = query.join(Grade).group_by(Student.id).order_by(desc('avg_score')).limit(5)
+def select_students_with_highest_avg_score(num_students=5):
+    subquery = session.query(Grade.student_id, func.avg(Grade.score).label('avg_score'))
+    subquery = subquery.group_by(Grade.student_id).subquery()
+
+    query = session.query(Student, subquery.c.avg_score)
+    query = query.join(subquery, Student.id == subquery.c.student_id)
+    query = query.order_by(desc(subquery.c.avg_score)).limit(num_students)
+    
     return query.all()
+
+if __name__ == "__main":
+    results = select_students_with_highest_avg_score()
+    for student, avg_score in results:
+        print(f"Student: {student.fullname}, Average Score: {avg_score}")
